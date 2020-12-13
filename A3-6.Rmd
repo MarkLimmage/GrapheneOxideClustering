@@ -1,0 +1,708 @@
+---
+title: "Assessment 3: Capstone Project"
+author: "Mark Limmage"
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
+link-citations: true
+linkcolor: blue
+bibliography: "A3-references.bib"
+always_allow_html: yes
+fig_caption: yes
+editor_options: 
+  chunk_output_type: inline
+latex_options:
+  fontsize: 12pt 
+---
+
+```{r Install packages, echo=FALSE, include=FALSE}
+
+# install.packages("formatR")
+# install.packages("caret", dependencies = c("Depends", "Suggests"))
+# install.packages("ISLR", dependencies = c("Depends", "Suggests"))
+# install.packages("tidyverse", dependencies = c("Depends", "Suggests"))
+# install.packages("plotly")
+# install.packages("Hmisc")
+#install.packages("Cluster")
+# install.packages("dbscan")
+#install.packages("tidyverse")
+# install.packages("clusterSim")
+# install.packages("fastmap")
+#install.packages("pastecs")
+#install.packages("NbClust", dependencies = c("Depends", "Suggests"))
+#install.packages("pca3d")
+#install.packages("class")
+# install.packages("naivebayes")
+# install.packages("dplyr")
+#install.packages("klaR")
+#install.packages("iml")
+#install.packages("globals")
+#install.packages("parallelly")
+#install.packages("manipulateWidget")
+#install.packages("ggsignif")
+#install.packages("rstatix")
+#install.packages("rio")
+#install.packages("zip")
+#install.packages("gridExtra")
+#install.packages("purrr")
+
+# library(plotly, warn.conflicts = F, quietly=T)
+library(ggplot2, warn.conflicts = F, quietly=T)
+library(gridExtra, warn.conflicts = F, quietly=T)
+# library(ISLR, warn.conflicts = F, quietly=T)
+library(caret, warn.conflicts = F, quietly=T)
+library(dplyr, warn.conflicts = F, quietly=T)
+# library(kableExtra, warn.conflicts = F, quietly=T) # complex tables
+# library(gridExtra, warn.conflicts = F, quietly=T) # complex tables
+# library(png, warn.conflicts = F, quietly=T)
+# library(grid, warn.conflicts = F, quietly=T)
+# library(gridExtra, warn.conflicts = F, quietly=T)
+# library(Hmisc, warn.conflicts = F, quietly=T)
+library(cluster, warn.conflicts = F, quietly=T)
+# library(dbscan, warn.conflicts = F, quietly=T)
+library(purrr, warn.conflicts = F, quietly=T)
+library(factoextra, warn.conflicts = F, quietly=T) # clustering visualization
+library(corrplot, warn.conflicts = F, quietly=T) 
+library(pastecs, warn.conflicts = F, quietly=T) 
+library("NbClust", warn.conflicts = F, quietly=T) 
+library("dbscan")
+library("pca3d", warn.conflicts = F, quietly=T)
+library("class", warn.conflicts = F, quietly=T)
+library("naivebayes", warn.conflicts = F, quietly=T)
+library("class", warn.conflicts = F, quietly=T )
+library("dplyr", warn.conflicts = F, quietly=T)
+library ("MASS", warn.conflicts = F, quietly=T)
+library("purrr", warn.conflicts = F, quietly=T)
+library("tibble", warn.conflicts = F, quietly=T)
+library("klaR", warn.conflicts = F, quietly=T)
+library("stats", warn.conflicts = F, quietly=T)
+library("iml", warn.conflicts = F, quietly=T)
+library("ggsignif")
+library(png)
+library(grid)
+library(gridExtra)
+library(kableExtra, warn.conflicts = F, quietly=T) # complex tables
+
+load('A3-6.RData')
+
+```
+
+```{r global-options, include=FALSE, echo=FALSE}
+
+
+knitr::opts_chunk$set(fig.pos ='H', fig.width=12, fig.height=6, fig.path='Figs/', warning = FALSE, message=FALSE, tidy=TRUE, tidy.opts=list(arrow=T, indent=2, width.cutoff=80), size="tiny" )
+
+```
+
+# Abstract
+
+Since the number of possible configurations of graphine oxide (GO) is large and the synthesis of pure samples of individual species of this material is difficult, one method of enquiry is to investigate the properties of simulated nanostructures. This study will examine a large number of simulated nanomaterials to identify any class groupings that exist within the variables that describe the electron charge transfer properties of these materials. Electron charge transfer is an important mechanism in biological and environmental sensing applications. Selected structural, chemical and statistical variables for each nanomaterial will be then reviewed to determine the best classification algorithm and a model will be trained to predict electron charge transfer class membership based on these predictors. 29 distinct clusters were identified in the charge transfer space and these class labels could be predicted from the selected 223 predictor variables. The importance of specific predictors to the classification algorithm were identified and the availability of a profile of important predictor variables was demonstrated. Further work is required to link the identified electron charge transfer classes to properties that correspond to different application requirements. In addition to this, further work is needed to investigate any causal links between the predictor variable profiles for each of these classes and the electron charge transfer properties they correspond to. 
+
+# Introduction:
+
+When Graphene Oxide (GO) is reduced, it forms a monomolecular layer of graphite containg residual oxygen and other heteroatoms, as well as a range of structural defects. The variation in these features cause a range of properties that are useful in bio-medicine, sensing, catalysis and in environmental and electrochemical applications [@RAY201539, p. 39]. The electron charge transfer properties of Graphene Oxide (GO) nanomaterials moderate their efficiency, selectivity and sensitivity for use in a variety of sensors [@ROWLEYNEALE2018218]. This study seeks to identify chemical, structural and statistical variables that can be of use in classifying nanostructures by their electron charge transfer properties. The objective of this study is to identify natural clusters in the charge transfer space and then to use these labels to train, evaluate and describe the features of a classification model based on selected predictor variables.
+
+# Data:
+
+The data used in the investigation consist of 839 variables describing 20396 simulated nanomaterials [@Barnard2019]. The electron charge transfer properties of these nanostructures is indicated by the ionization potential, the electron affinity, the Fermi level and the fundamental electronic band gap, the electronegativity and electron affinity. These 6 variables form the charge transfer class. The remaining 833 vaiables are categorised as structural, chemical and statistical features, many of which are highly correlated and were removed, leaving 223 features. The complete list of these is tabulated in table S1 [@2019NanoF].
+
+The raw data was downloaded from CSIRO [@Barnard2019] as an excel file. The 223 predictor variables indicated in [@2019NanoF] were used to select columns from the Neutral_Graphene_Oxide_Nanoflake_Dataset.csv file. Some column headings had to be changed to match the import mapping in read.csv where spaces and hyphens were converted to underscores. A separate data frame called labels was extracted using the charge transfer variables. These sets were combined and NA values omitted, leaving a set of 10314 observations of simulated nanostructures described by 229 features. The charge transfer columns were then extracted from this set and scaled.
+
+
+```{r Import the data, echo=FALSE}
+# Clear the Global Environment
+#rm(list=ls())
+
+#NGOND <- read.csv("Neutral_Graphene_Oxide_Nanoflake_Dataset.csv", header=TRUE, sep=","  )
+
+#data1 <- NGOND[c("Ixz_hydro", "Iyz_hydro", "max_bond_angle", "max_bond_length", "norm_Ixx_hydro", "norm_Ixy_hydro", "prox_Ixx_bar_hydro", "prox_Ixz_hydro", "prox_Iyy_bar_hydro", "prox_Iyy_hydro", "all_agent_group_count", "anisotropy", "area", "C_concentration", "C_n10_m8", "C_n11_m7", "C_n11_m8", "C_n12_m9", "C_n3_m3", "C_n5_m5", "C_n7_m7", "C_n8_m6", "C_n9_m6", "C_n9_m8", "carboxyl_concentration", "C.C_coordination_number", "C.C_sp2.sp2.error", "C.C_sp2.sp2.mean_value", "C.C_sp2.sp3.error", "C.C_sp2.sp3.mean_value", "C.C_sp3.sp3.error", "C.C_sp3.sp3.mean_value", "C.C_sp3.sp3.total_number", "C.C.error", "C.C.C_C.sp2.C.error", "C.C.C_C.sp2.C.mean_value", "C.C.C_C.sp3.C.error", "C.C.C.error", "C.C.C.mean_value", "C.C.H_C.sp2.H.error", "C.C.H_C.sp2.H.mean_value", "C.C.H.mean_value", "C.C.O_C.sp2.O.error", "C.C.O_C.sp2.O.mean_value", "C.C.O_C.sp2.O.total_number", "C.C.O.mean_value", "C.H_coordination_number", "C.H.error", "C.H.mean_value", "C.O_sp2.sp1.error", "C.O_sp2.sp1.mean_value", "C.O_sp3.sp1.error", "C.O_sp3.sp1.mean_value", "C.O_sp3.strained.error", "C.O_sp3.strained.mean_value", "C.O.error", "C.O.mean_value", "C.O.C_C.sp1.C.error", "C.O.C_C.sp1.C.mean_value", "C.O.C_C.sp1.C.total_number", "C.O.C_C.strained.C.mean_value", "C.O.C_C.strained.C.error", "C.O.C.error", "C.O.H_C.sp1.H.mean_value", "C.O.H.error", "def_local_hydroxyl_count", "def_local_other_count", "defects_concentration", "density_loc_C_std", "density_loc_ether_kurt", "density_loc_ether_skew", "density_loc_hydro_mean", "density_loc_hydro_skew", "density_loc_O_kurt", "density_loc_O_skew", "ether_concentration", "H", "H_concentration", "H.C_coordination_number", "hydroxyl_concentration", "hydroxyl_count", "Ixx_bar_O", "Ixx_bar_O_area", "Ixy_ether_area", "Ixz_ether_area", "Iyy_bar_hydro_area", "Iyy_bar_O", "Iyy_ether_area", "Iyy_O_area", "Iyz_O_area")]
+
+#data2 <- NGOND[c("Izz_O_area", "kurt_diameter", "mass_density", "max_diameter", "max_oop", "min_diameter", "norm_density_ether_std", "norm_density_hydro_kurt", "norm_density_hydro_std", "norm_density_O_kurt", "norm_density_O_std", "norm_Ixx_bar_ether", "norm_Ixx_ether", "norm_Ixx_ether_area", "norm_Ixx_hydro_area", "norm_Ixx_O_area", "norm_Ixy_O", "norm_Ixz_hydro_area", "norm_Ixz_O_area", "norm_Iyy_bar_ether", "norm_Iyy_bar_ether_area", "norm_Iyy_hydro_area", "norm_Iyy_O", "norm_Iyz_ether", "norm_Izz_ether_area", "O_atoms_only_1_neighbourtotal", "O_n10_m3", "O_n11_m2", "O_n12_m1", "O_n4_m1", "O_n4_m2", "O_n5_m2", "O_n7_m2", "O_n9_m2", "O.C_coordination_number", "O.H.error", "O.H.mean_value", "O.O_coordination_number", "particle_density", "prox_density_ether_skew", "prox_density_hydro_kurt", "prox_Ixx_bar_ether", "prox_Ixx_bar_hydro_area", "prox_Ixx_ether_area", "prox_Ixx_hydro_area", "prox_Ixx_O", "prox_Ixy_ether_area", "prox_Ixy_hydro_area", "prox_Ixz_ether", "prox_Ixz_O", "prox_Iyy_bar_ether", "prox_Iyy_ether", "prox_Iyy_ether_area", "prox_Iyy_hydro_area", "prox_Iyy_O_area", "prox_Iyz_ether", "prox_Iyz_hydro_area", "prox_Iyz_O_area", "prox_Izz_ether_area", "prox_Izz_hydro_area", "prox_norm_density_hydro_kurt", "prox_norm_density_hydro_mean", "prox_norm_density_hydro_std", "prox_norm_Ixx_ether_area", "prox_norm_Ixy_hydro_area", "prox_norm_Izz_ether_area", "r_E_hydro_mean", "r_ether_E_mean", "r_hydro_hydro_std", "residual_oop", "ring_density_12_irreducible_sp", "ring_density_12_reducible_all", "ring_density_4_irreducible_sp", "ring_density_5_irreducible_sp", "ring_density_6_reducible_all", "ring_density_7_irreducible_sp", "ring_density_7_reducible_all", "ring_density_9_reducible_all", "rings_total_number_10_sp", "rings_total_number_11_sp", "rings_total_number_12_all", "rings_total_number_8_all", "rings_total_number_8_sp", "rmse_oop", "skew_diameter", "sp2.like_n10_m1", "sp2.like_n10_m4", "sp2.like_n10_m5", "sp2.like_n10_m6", "sp2.like_n10_m7", "sp2.like_n10_m8", "sp2.like_n11_m10", "sp2.like_n11_m3", "sp2.like_n11_m4", "sp2.like_n11_m5", "sp2.like_n11_m6", "sp2.like_n11_m7", "sp2.like_n11_m8", "sp2.like_n11_m9", "sp2.like_n12_m12", "sp2.like_n12_m2", "sp2.like_n12_m4", "sp2.like_n12_m5", "sp2.like_n12_m6", "sp2.like_n12_m7", "sp2.like_n12_m8", "sp2.like_n12_m9", "sp2.like_n4_m1", "sp2.like_n5_m1", "sp2.like_n5_m2", "sp2.like_n6_m1", "sp2.like_n6_m2", "sp2.like_n6_m3", "sp2.like_n6_m4", "sp2.like_n6_m5", "sp2.like_n7_m2", "sp2.like_n7_m3", "sp2.like_n7_m4", "sp2.like_n7_m5", "sp2.like_n7_m6", "sp2.like_n8_m1", "sp2.like_n8_m2", "sp2.like_n8_m3", "sp2.like_n8_m4", "sp2.like_n8_m5", "sp2.like_n8_m6", "sp2.like_n9_m1", "sp2.like_n9_m2", "sp2.like_n9_m3", "sp2.like_n9_m4", "sp2.like_n9_m5", "std_diameter", "ZZ_edge")]
+
+# Combine these into a single data frame
+data <- cbind( data1, data2 )
+
+# Add the target labels and omit observations with NAs
+labels <- NGOND[c('total_energy', 'ionization_potential', 'electron_affinity', 'band_gap', 'electronegativity', 'Fermi_energy')]
+labelled_data <- na.omit(cbind(labels,data))
+
+```
+
+The electron charge transfer label data was scaled and centered in preparation for clustering using the k-means and hierarchical clustering algorithms. 
+
+```{r Prepare the label data for clustering, echo=FALSE}
+
+# Scale the label variables
+scaled_labels <- scale(labelled_data[1:6], center=T, scale=T)
+scaled_labels <- as.data.frame(scaled_labels)
+
+```
+
+Figure 1 shows the density plots of these variables. It is visually apparent from Figure 1 that total energy and the band gap distributions would not benefit from transformation, however the others appear to be approaching normality to varying degrees. 
+
+```{r}
+
+# define function
+density_fun <- function(x,y){
+  ggplot(scaled_labels, aes_string(x)) + geom_density(alpha = 0.2)
+}
+# plot
+plots <- lapply(names(scaled_labels), density_fun )
+
+```
+```{r Density plots of the label variables, echo = F, fig.cap="\\label{fig:figs} Density plots of the scaled electron charge transfer variables" }
+
+require(gridExtra)
+do.call(grid.arrange,  plots)
+
+```
+
+# Methods:
+
+The task of identifying groupings in the electron charge transfer variables is an unsupervised learning task since no assumptions about the ideal clusters are used. Two methods are investigated here. K-means clustering uses a specific metric to measure the distance between individual observations and a set of k randomly distributed centroids.  With each iteration of the algorithm, centroids are recalculated and individual points reassigned until the sum of square distances settles on a minimum. While there are different metrics for the measurement of distance between observations and their centroids, the most significant parameter in k-means clustering is the value of k, which defines the number of clusters. Below, the electron charge variables are clustered over a range of k values (1:50). All processing of data was completed in R [@Manual]. 
+
+
+```{r PLot the WSSE, echo=F, fig.cap="\\label{fig:figs} WSS for values of k between 1 and 50 for k-means clustering" }
+
+# Calculate a distance matrix once to improve performance
+#DistMatrix <- dist(scaled_labels)
+
+# Initialise a variable to hold the WSS results
+#wss <- rep(NA,50)
+
+# Loop through values of k 1:5 by 5 and perform kmeans clustering
+#for (k in seq(1,50,5)) {
+#  set.seed(123)
+#  km.out <- kmeans(x = scaled_labels, iter.max=50, centers = k, nstart = 50)
+#  wss[k] <- mean(km.out$withinss)
+#}
+
+# Plot the WSSE for k=1:50 by 5
+plot( x=seq(1,50,5), y=wss[seq(1,50,5)] ,main="WSS for n(clusters)=1:50", xlab="n(clusters)", ylab="WSSE", type="b" )
+
+
+```
+
+Figure 2 shows that there is a clear elbow in the within-cluster sum of squares plot within the range of k=1:10. This indicates that there is a point at which further grouping by increasing k begins to have a reduced affect. This range in k can be further investigated using the fviz_nbclust package which simplifies the extraction of gap statistic and silhouette metrics for the different k values. Here the number of iterations and the algorithm is tuned to allow for convergence. 
+
+
+```{r Investigate k,echo=T }
+
+# kmeans function with max.ietr=50
+MyKmeansFUN <- function(x,k){cluster=kmeans(x, k, iter.max=50, nstart=50)}
+
+# Investigate optimal clustering with kmeans using different methods
+fwss <- fviz_nbclust(scaled_labels, FUNcluster=MyKmeansFUN, method ="wss", diss = DistMatrix, k.max = 10 )
+sil  <- fviz_nbclust(scaled_labels, FUNcluster=MyKmeansFUN, method = "silhouette", k.max=10, )
+
+#Increase iterations and change algorithm 
+MyKmeansFUN <- function(x,k){cluster=kmeans(x, k, algorithm="MacQueen", iter.max=200, nstart=50 )}
+gap_stat <- clusGap(scaled_labels, FUNcluster=MyKmeansFUN, K.max = 20, B = 3)
+gs       <- fviz_gap_stat(gap_stat)
+
+```
+
+
+```{r Plot the kmeans analysis, echo=F, fig.cap="\\label{fig:figs} WSS, Silhouette and Gap Statistic for k=1:10 k-means clustering" }
+
+#Set the labels for plotting 
+fwss$labels['title'] <- "Optimal k (WSSE)"
+sil$labels['title'] <- "Optimal k (Silhouette Width)"
+gs$labels['title'] <- "Optimal k (Gap Stat)"
+grid.arrange (fwss,sil,gs, nrow=1,ncol=3)
+
+```
+
+Figure 3 shows that there is no no clear candidate for the optimal number of clusters, with different k values highlighted using different methods. K=2 and k=5 can be seen to be worth investigating as they represent the first and second local maximum in the silhouette width plot. Additionally, 5 is the first point > 1 where the gap statistic starts to decrease and it is also visible elbow in Total WSSE plot.
+
+Agglomerative hierarchical clustering was then used in an attempt to build support for the k=5 value for the optimal number of clusters identified using k-means analysis from Figure 3. Just as with k-means, there are a variety of different methods available in hierarchical clustering that are differentiated by the way distance between clusters is measured. 
+
+Figure 4 shows the dendograms for 4 different distance metrics, with Wards method demonstrating visually the greatest degree of cluster separation. This method uses the square of the dissimilarity between points, which is evident in the larger height values [@Ward2014] than the other methods. It is also clear from Figure 4 that that this separation quickly diminishes beyond k=5 clusters. 
+
+```{r Heirachical clustering, echo=F}
+
+#Get points to plot for each method
+#s_points <- hclust(DistMatrix, method = "single")
+#c_points <- hclust(DistMatrix, method = "complete")
+#a_points <- hclust(DistMatrix, method = "average")
+#w_points <- hclust(DistMatrix, method = "ward.D2")
+
+
+```
+ 
+
+```{r Plot ahc dendograms, echo=F, fig.cap="\\label{fig:figs} Dendograms for different AHC methods" }
+
+par(mfrow = c(2, 2) )
+
+plot(s_points, main = "Single Linkage", labels=F, hang=-1, sub="", xlab="")
+plot(c_points, main = "Complete Linkage", labels=F, hang=-1, sub="", xlab="")
+plot(a_points, main = "Average Linkage", labels=F,  hang=-1, sub="", xlab="")
+plot(w_points, main = "Ward's", labels=F, hang=-1, sub="", xlab="")
+
+#ward <- hclust(DistMatrix, method = "ward.D2")
+
+# Inspect the non-optimal 
+# sub_grp <- cutree(ward, k = 4)
+# fviz_cluster( list(data = scaled_labels, cluster = sub_grp), geom="point", xlab = FALSE, ylab = FALSE)
+# sub_grp <- cutree(ward, k = 6)
+# fviz_cluster( list(data = scaled_labels, cluster = sub_grp), geom="point", xlab = FALSE, ylab = FALSE)
+# sub_grp <- cutree(ward, k = 7)
+# fviz_cluster( list(data = scaled_labels, cluster = sub_grp), geom="point", xlab = FALSE, ylab = FALSE)
+# sub_grp <- cutree(ward, k = 8)
+# fviz_cluster( list(data = scaled_labels, cluster = sub_grp), geom="point", xlab = FALSE, ylab = FALSE)
+# sub_grp <- cutree(ward, k = 9)
+# fviz_cluster( list(data = scaled_labels, cluster = sub_grp), geom="point", xlab = FALSE, ylab = FALSE)
+
+
+```
+
+Figure 5 shows the clustering for k=5 in 2D space. Of note here is cluster 4 (blue), which appears to be significantly further away from the other clusters. This 2 dimensional representation of the electron charge transfer space shows some overlapping of clusters.
+
+
+```{r Plot k equals 5 clusters, fig.cap="\\label{fig:figs} K=5 Clustering in 2d space" }
+
+# Set the cluster labels to sub_grp and visualise hclust clustering in 2d
+sub_grp <- cutree(ward, k = 5)
+fviz_cluster( list(data = scaled_labels, cluster = sub_grp), geom="point", xlab = FALSE, ylab = FALSE)
+
+```
+
+An alternative to optimising the k value through analyses of intra- and inter-cluster distances is a density-based approach. HDBSCAN is an implementation of this kind of approach. The advantage of this process over DBSCAN is that it computes a hierarchy of partitions based on all possible values of *eps*, identifying the most prominent density based clusters in the data for a given minPts parameter. Determining the optimal minPts parameter is achieved through evaluating the mean membership, outlier and stability scores for different values of minPts. This is done using a wrapper function from [@Hsieh2020] (Appendix 1). The mean membership score is a measure of the average of the probabilities that each observation in the data set lies within a given cluster. The minPts value that maximises mean membership corresponds to the clustering that maximises the probability of cluster membership across the data set. The outlier score for each point is the likelihood that it is an outlier and the mean outlier score represents the degree to which each clustering solution contains the points within clusters. The value of minPts that minimises mean_outlier represents the clustering that minimises the chances of points being outliers, unassociated with clusters. Finally, the mean stability score of a cluster provides a measure of its persistance within the dendogram across a range of eps heights. The value of minPts that maximises the mean stability describes the clustering solution with the most stable clusters. Figure 6 represents the values of these metrics for minPts=1:100 by 10.
+
+
+```{r Try HDBSCAN, echo=F }
+
+# from [@Hsieh2020]
+
+#' Wrap hdbscan with default settings except the minPts
+#'
+#' @param minPts min size of the cluster
+#' @param dt input data for hdbscan
+#'
+#' @return a dbscan obejct
+#' @export
+hdbscan_by_minPts <- function(minPts, dt) {
+  dbscan::hdbscan(dt, minPts = minPts)
+}
+
+
+
+#' Put hdbscan list(object-based) output into a tibble
+#'
+#' @param hdbobj 
+#'
+#' @return a tibble with all object-based results from hdbscan
+#' 
+get_obj_score <- function(hdbobj) {
+  tibble::tibble(
+    object_id = as.character(seq(1:length(hdbobj$cluster))),
+    cluster_id = as.character(hdbobj$cluster), 
+    min_points = hdbobj$minPts,
+    member_prob = hdbobj$membership_prob,
+    outlier_score = hdbobj$outlier_scores
+  )
+}
+
+
+#' Put hdbscan list(cluster-based) output into a tibble
+#'
+#' @param hdbobj 
+#'
+#' @return a tibble with cluster-based results from hdbscan
+#' 
+get_cluster_stability <- function(hdbobj) {
+  tibble::enframe(hdbobj$cluster_scores, name = "cluster_id", value = "stability_score")
+}
+
+
+#' Collect all hdbscan object results
+#'
+#' @param hdbobj 
+#'
+#' @return
+#' @export
+#'
+get_hdbscan_result <- function(hdbobj) {
+  get_obj_score(hdbobj) %>%
+    dplyr::left_join(
+      get_cluster_stability(hdbobj), by = "cluster_id"
+    )
+}
+
+
+#' Calculate mean cluster stability score based on minPts
+#'
+#' @param hdbscan_res a tibble from get_hdbscan_result()
+#'
+#' @return
+#' @export
+#'
+#' 
+check_stability_score_by_minPts <- function(hdbscan_res) {
+  hdbscan_res %>% 
+    dplyr::distinct(cluster_id, min_points, stability_score) %>%
+    na.omit() %>%
+    dplyr::group_by(min_points) %>%
+    dplyr::summarize(mean_stability_score = mean(stability_score))
+}
+
+
+
+#' Calculate mean membership probability (first by cluster) score based on minPts 
+#'
+#' @param hdbscan_res a tibble from get_hdbscan_result()
+#'
+#' @return
+#' @export
+#'
+check_member_prob_score_by_minPts <- function(hdbscan_res) {
+  hdbscan_res %>%
+    dplyr::group_by(
+      cluster_id, min_points
+    ) %>%
+    dplyr::summarize(
+      mean_cluster_memb_prob = mean(member_prob)
+    ) %>%
+    dplyr::filter(
+      cluster_id != 0
+    ) %>%
+    dplyr::group_by(min_points) %>%
+    dplyr::summarize(
+      mean_memb = mean(mean_cluster_memb_prob)
+    )
+}
+
+
+
+#' Calculate mean outlier score (first by cluster)  based on minPts 
+#'
+#' @param hdbscan_res a tibble from get_hdbscan_result()
+#'
+#' @return
+#' @export
+#'
+check_outlier_score_by_minPts <- function(hdbscan_res) {
+  hdbscan_res %>%
+    dplyr::group_by(
+      cluster_id, min_points
+    ) %>%
+    dplyr::summarize(
+      mean_cluster_outlier_score = mean(outlier_score)
+    ) %>%
+    dplyr::filter(
+      cluster_id != 0
+    ) %>%
+    dplyr::group_by(min_points) %>%
+    dplyr::summarize(
+      mean_outlier = mean(mean_cluster_outlier_score)
+    )
+}
+
+
+#' Extract HDBSCAN object from python HDBSCAN library
+#'
+#' @param pyobj the python hdbscan object, accessed by py$pyobj
+#'
+#' @return a tibble
+#' @export
+#' 
+
+get_python_hdbscan_result <- function(pyobj) {
+  
+  # by object
+  labels <- tibble::enframe(pyobj$labels_, name = "object_id",  value = "cluster_id") %>% 
+    dplyr::mutate(cluster_id = .data$cluster_id + 1)
+  probs <- tibble::enframe(pyobj$probabilities_, name = "object_id",  value = "member_prob")
+  outliers <- tibble::enframe(pyobj$outlier_scores_, name = "object_id",  value = "outlier_score")
+  
+  # join three tibble together
+  result <- purrr::reduce(list(labels, probs, outliers), dplyr::inner_join, by = "object_id")
+  
+  # this is by cluster
+  persists <- tibble::enframe(pyobj$cluster_persistence_, name = "cluster_id",  value = "cluster_persistence")
+  result <- result %>% dplyr::left_join(persists, by = "cluster_id")
+  
+  
+  # clean up the data and add parameters
+  result <- result %>%
+    dplyr::mutate(
+      min_points = pyobj$min_cluster_size, 
+      min_samples = pyobj$min_samples,
+      cluster_id = as.character(.data$cluster_id),
+      object_id = as.character(.data$object_id)
+    )
+  result <- result %>%
+    dplyr::left_join(
+      tibble::tibble(
+        #total_validity = pyobj$relative_validity_, 
+        min_points = pyobj$min_cluster_size), 
+      by = "min_points"
+    )
+  return(result)
+}
+
+
+#' Add a column, group_resp, for the HDBSCAN table, based on the target color
+#' 
+#' Currently, the larger value will be selected
+#'
+#' @param hdbscan_tb 
+#' @param use_col 
+#'
+#' @return
+#' @export
+#' 
+
+add_hdbscan_cluster_rep <- function(hdbscan_tb, use_col = member_prob) {
+  
+  use_col_en <- rlang::enquo(use_col)
+  
+  # highest target value (use_col) in a cluster will be selected
+  group_rep <- hdbscan_tb %>% 
+    dplyr::filter(.data$cluster_id != 0) %>%
+    dplyr::group_by(.data$cluster_id) %>% 
+    dplyr::arrange(desc(abs(!!use_col_en))) %>% 
+    dplyr::do(head(.,1)) %>% dplyr::ungroup() %>% 
+    dplyr::select(.data$object_id, .data$cluster_id) %>% 
+    dplyr::mutate(group_rep = "Yes") 
+  
+  result <- hdbscan_tb %>%
+    dplyr::left_join(
+      group_rep, by = c("object_id", "cluster_id")
+    )
+  return(result)
+}
+
+
+```
+
+
+
+```{r Investigate minPts values for HDBSCAN, fig.cap="\\label{fig:figs} HDBSCAN evaluation using stability, membership probability and outlier scores for minPts=10:100 by 10" }
+# Set up the HDBSCAN for values of minPts 10:100 by 10 and perform the clustering analysis
+hdb_obj_real_1 <- map( seq(10, 100, by = 10), ~ hdbscan_by_minPts(minPts = .x, dt = scaled_labels) )
+hdb_obj_real_res_1 <- map_df(hdb_obj_real_1, get_hdbscan_result)
+
+par(mfrow = c(1, 3) )
+# Plot values for the evaluation metrics for k=10:100 by 10
+  plot(check_stability_score_by_minPts(hdb_obj_real_res_1), 
+       type="b", main="Mean stability score", xlab="Min points", ylab="Mean stability score")
+  plot(check_member_prob_score_by_minPts(hdb_obj_real_res_1), 
+       type="b", main="Member probability score", xlab="Min points", ylab="Mean membership score")
+  plot(check_outlier_score_by_minPts(hdb_obj_real_res_1), 
+       type="b",main="Member stability score", xlab="Min points", ylab="Mean stability score")
+
+
+```
+
+Figure 6 shows that each of these values increases as the minPts value increases. This is not surprising since the total number of points included in clusters will also increase as the value of minPts increases. A local maximum is also evident at around the minPts=20 value. This analysis was then repeated for values of minPts=15:35 by 1 to establish an optimal value of minPts for use with the HDBSCAN clustering algorithm. Figure 7 shows that for each of these measures, a minPts=17 value is optimal. 
+
+```{r HDBS evaluation, fig.cap="\\label{fig:figs} HDBSCAN evaluation using stability, membership probability and outlier scores for minPts=15:35 by 1" }
+
+hdb_obj_real_2 <- map(seq(15, 35, by = 1), ~ hdbscan_by_minPts(minPts = .x, dt = scaled_labels))
+hdb_obj_real_res_2 <- map_df(hdb_obj_real_2, get_hdbscan_result)
+
+par(mfrow = c(1, 3) )
+# Plot values for the evaluation metrics for k=10:100 by 10
+plot(check_stability_score_by_minPts(hdb_obj_real_res_2), 
+     type="b", main="Mean stability score", xlab="Min points", ylab="Mean stability score")
+plot(check_member_prob_score_by_minPts(hdb_obj_real_res_2), 
+     type="b", main="Member probability score", xlab="Min points", ylab="Mean membership score")
+plot(check_outlier_score_by_minPts(hdb_obj_real_res_2), 
+     type="b",main="Member stability score", xlab="Min points", ylab="Mean stability score")
+
+```
+
+The dendogram for the HDBSCAN clusters with minPts=17 is shown in Figure 8 with the number of points in each cluster shown in Table 1. This solution identifies 3087 observations as outliers. 
+
+```{r Try simplified HDBSCAN, fig.cap="\\label{fig:figs} HDBSCAN Tree for minPts=17" }
+
+hdbs <- hdbscan(scaled_labels, minPts = 17 )
+hdbs
+
+plot(hdbs, scale=3, gradient = c("green", "blue"), show_flat = F)
+clusters <- table(hdbs$cluster)
+
+```
+
+Since the electron charge transfer space is described by 6 variables and is therefore difficult to visualise, PCA can be used to identify transformations of the original dimensions that maximise the degree of variability that can be represented along the fewest axes. 
+
+```{r PCA for visualisation, echo=F }
+
+
+## Perform PCA and get the variance explained
+
+PCA <- prcomp(scaled_labels, center=TRUE, scale = TRUE)
+
+PVE <- table( round((PCA$sdev^2)/sum(PCA$sdev^2),3)) %>%
+  kable('latex',
+        booktabs=T,
+        escape=FALSE, 
+        caption='Variance explained by each principle component', 
+        format.args=list(big.mark=',', align='c'))%>%
+  kable_styling(latex_options = c('striped', 'HOLD_position', 'repeat_header') )  
+
+PVE
+
+
+
+```
+
+Figure 9 shows the hclust and HDBSCAN clustering solutions in the three most significant PCA dimensions. The observations identified as noise have been removed from the HDBSCAN plot. It is clear from these plots that there are well defined, distinct clusters available from the HDBSCAN method with the minPts parameter optimised at 17. This contrasts with the hclust solution that has some overlapping of clusters.
+
+```{r Setting up PCA, echo=T}
+# Plot of HDBSCAN including noise
+hsbs3d <- pca3d(PCA, components = 1:3, col=ifelse( hdbs$cluster+1==1,35,hdbs$cluster+1), radius=0.5, group=hdbs$cluster+1, legend="left")
+
+# Plot of hclust clusters
+hclus3d <- pca3d(PCA, components = 1:3, col=sub_grp, group=sub_grp, legend="left")
+
+# Set the cluster names to variables
+hsbs_groups <- hdbs$cluster+1
+hclust_groups <- sub_grp
+
+# Add two more label columns to the scaled data
+scaled_labels <- cbind(scaled_labels,hsbs_groups,hclust_groups)
+
+# Remove the noise
+new_hsbs_groups <- scaled_labels[scaled_labels[, "hsbs_groups"] !=1, ]
+
+PCA <- prcomp(new_hsbs_groups, center=TRUE, scale = TRUE)
+hsbs3d <- pca3d(PCA, radius=0.5, group=new_hsbs_groups$hsbs_groups, legend="left" )
+
+```
+
+
+```{r Plot the HDBSCAN and hclust clusters in the first 3 PCA dimensions, echo=F, fig.cap="\\label{fig:figs} Hclust, HDBSCAN with noise and HDBSCAN without noise. Clusters plotted in 3 top PCA dimensions." }
+
+hclust_png <- readPNG('hclust.png')
+HDBSCAN_png <- readPNG('HDBSCAN.png')
+HDBSCAN_nn_png <- readPNG('HDBSCAN_nn.png')
+
+grid.arrange(rasterGrob(hclust_png),rasterGrob(HDBSCAN_png),rasterGrob(HDBSCAN_nn_png),nrow=1, ncol=3)
+
+```
+
+Having removed the noise from the data set and using the HDBSCAN clusters as labels, two supervised learning methods were trialed to determine the possibility of predicting cluster assignment from the predictor variables. Both Naieve Bayes and k-nearest neighbours classifiers are sensitive to the independence of predictor variables.  It is easily established using the corr function that many of the 223 structural, chemical and statistical predictor variables are highly correlated. Using the findCorrelation function variables with correlation coefficients with other variables above 0.15 were identified and removed from the predictor space leaving 95 predictors.
+
+```{r now try training a model }
+
+#remove the eclectron charge transfer variables from the data set
+unlabelled_data <- labelled_data[-c(1:6)]
+
+## First find the highly correlated variables:
+hi_cor_preds <- findCorrelation(
+  unlabelled_data,
+  cutoff = 0.15,
+  verbose = FALSE,
+  names = FALSE,
+  exact = FALSE
+)
+
+# Remove the variables with high correlation coefficients
+unlabelled_data <- unlabelled_data[-hi_cor_preds]
+
+# Labels from the hdbscan clustering were assigned to a variable
+hsbs_groups <- new_hsbs_groups$hsbs_groups
+
+#bind the labels to the predictors
+nn_labelled_data <- cbind(unlabelled_data[row.names(new_hsbs_groups),],hsbs_groups)
+
+
+```
+
+The most significant parameter for knn classification is the k value, which defines the number of neighbouring points that should be considered in determining class allocation. Using an 80% random split of the 10314 observations as a training set, values of k ranging from 1:20 by 1 were trialed, with accuracy plotted in Figure 10. Figure 10 shows a value of k=12 maximises the accuracy of the knn classifier at 83.5%.
+
+```{r Try knn, echo=F, fig.cap="\\label{fig:figs}Accuracy of knn classifier over k=1:20 by 1." }
+
+# Set the test and training splits and labels
+set.seed(123)
+no_obs <- dim(nn_labelled_data)[1] 
+test_index <- sample(no_obs, size = as.integer(no_obs*0.2), replace = FALSE) 
+test_predictors <- scale(nn_labelled_data[test_index, 1:95], center=T, scale=T)
+test_class <- nn_labelled_data[test_index, "hsbs_groups"]
+training_index <- -test_index 
+training_predictors <- scale(nn_labelled_data[training_index, 1:95], center=T, scale=T)
+training_class <- nn_labelled_data[training_index, "hsbs_groups"]
+
+# Try different values for k
+accuracy <- rep(NA,20)
+for( i in seq(1, 20, by = 1)) {
+  Pred_class <- knn(train=training_predictors, test=test_predictors, cl=training_class, k=i)
+  cont_tab <- table(Pred_class, test_class)
+  accuracy[i] <- sum(diag(cont_tab))/sum(cont_tab)
+}
+
+# Plot the accuracy
+plot(x= seq(1, 20, by = 1), y=accuracy[seq(1, 20, by = 1)], main="Accuracy of KNN classification of HDBSCAN labels (31) for k=1:20", xlab="k value", ylab="accuracy", type = "b")
+
+# Select k=12 and print confusion matrix
+Pred_class <- knn(train=training_predictors, test=test_predictors, cl=training_class, k=12)
+cont_tab <- table(Pred_class, test_class)
+sum(diag(cont_tab))/sum(cont_tab)
+
+
+```
+
+Despite many of the predictor variables not demonstrating a Gaussian distribution, the Naieve Bayes classifier performed better than knn based on classification accuracy using the 95 selected variables.  A confusion matrix for the NB classifier gave an overall accuracy of 89%. As well as the nominal accuracy benefit for the NB classifier, the model supports feature importance analysis using the imp package [@molnar2019]. 
+
+This function takes each predictor variable and shuffles the data, then recreates the model and tests it comparing the new accuracy with the accuracy obtained from the data with the predictor's values intact. Where there is little impact on the model accuracy from randomising the predictor, it is deemed as less significant than if there was a high impact. Figure x shows the feature importance of each of the selected predictors across the label space. Feature importance is the increase in model error when the feature's information is destroyed [@molnar2019, ch. 5.5.4].
+
+```{r Try NB }
+
+## Compare to NB classifier even though we have some non-gaussian distributions and some highly correlated variables
+
+nb_hsbs <- naive_bayes(as.factor(hsbs_groups) ~., data = nn_labelled_data[training_index, c(1:96)])
+Pred_nb_hsbss <- predict(nb_hsbs, newdata = nn_labelled_data[test_index, 1:95], type = "class")
+cont_tab <- table(Pred_nb_hsbss, test_class)
+sum(diag(cont_tab))/sum(cont_tab)
+
+```
+
+In addition to the global measures of feature importance, the imp package also allows for an analysis of the importance of each predictor in classifying observations as belonging to particular class labels (in this case electron charge transfer clusters). As well as this, the range of the predictor variable which is significant in the class membership decision is also available in the Accumulated Local Effect plots. The value of the ALE can be interpreted as the main effect of the feature at a certain value compared to the average prediction of the data.  Figure 11 shows the whole feature space ranked from most important globally to least. The output below shows the 6 most important features in classifying nanomaterials into the electron charge transfer clusters globally. 
+
+
+```{r Check feature importance, echo=F, fig.cap="\\label{fig:figs} Feature importance" }
+
+# Not run during knit 
+#predictor <- Predictor$new(nb_hsbs, data = nn_labelled_data[training_index, c(1:95) ], y = #as.numeric(nn_labelled_data[training_index, 96]))
+#imp <- FeatureImp$new(predictor, loss = "ce")
+
+
+library("ggplot2")
+plot(imp)
+
+```
+
+
+```{r Feature importance table, echo=F }
+
+feg <- head(imp$results[1:10,c(1,3)] )
+as.data.frame(feg[1:6,])
+
+
+```
+
+Figure 12 shows the ALE plots for the Ixx_bar_O_area feature acrross the 29 electron charge transfer cluster classes. It is clear that Ixx_bar_O_area values in the scaled range 0.002 to 0.004 are significant in the class membership decision for cluster 4. Similarly, values of Ixx_bar_O_area aound the 0.004 range are significant in classifying cluster 26.
+
+```{r ALE plots, fig.cap="\\label{fig:figs} ALE plots for Ixx_bar_O_area across the cluster labels" }
+
+# ale <- FeatureEffect$new(predictor, feature = "Ixx_bar_O_area")
+ale$plot()
+
+
+```
+
+# Results and Discussion
+
+The electron charge transfer variables provided sufficient variance to cluster the nanomaterials into 29 distinct groups. Of the 10314 observations in the data set, approximately 3087 of these were classified as noise. Using the class labels of these clusters, it was possible to train a Bayes Classifier model that was able to predict with 89% accuracy the electron charge transfer class membership of the nanomaterial. Using this model, it was possible to identify important variables in the feature space and furthermore, provide an indication of which clusters these variables were significant for and over what ranges of their scaled values.
+
+This study did not consider any of the physical characteristics represented by the predictor variables, nor any material properties represented by the identified clusters. This work would guide further investigation, allowing for more deliberate clustering and discerning feature selection in the choice and tuning of prediction model parameters. In this study, the HDBSCAN cluster solution was pursued simply because, after removing noise, it identified a larger number of well separated distinct clusters than the hclust algorithm. Qualitative consideration of the variables may have indicated a different choice in this regard. Identification and treatment of outliers as noise in the classification process may also yield better model performance.
+
+# Conclusions
+
+This work has demonstrated a method of categorising materials based on their application properties and then identifying structural, chemical and statistical features that are significant in that categorisation. This process has the potential to guide research into the development of new materials that meet existing application specifications as well as providing a pathway to the discovery of materials with novel applicatinon properties and the corresponding chemical, structural and statistical features. 
+
+# References
