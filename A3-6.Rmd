@@ -2,9 +2,9 @@
 title: "Assessment 3: Capstone Project"
 author: "Mark Limmage"
 output:
-  pdf_document: default
-  word_document: default
   html_document: default
+  word_document: default
+  pdf_document: default
 link-citations: true
 linkcolor: blue
 bibliography: "A3-references.bib"
